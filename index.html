@@ -34,7 +34,7 @@
         }
 
         .container {
-            max-width: 1650px;
+            max-width: 1750px;
             margin: 0 auto;
         }
 
@@ -137,7 +137,7 @@
 
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 350px 1fr;
+            grid-template-columns: 380px 1fr;
             gap: 2rem;
         }
 
@@ -218,6 +218,38 @@
             font-size: 0.75rem;
             padding: 0.3rem 0.5rem;
             width: auto;
+        }
+
+        /* Dynamic Payment Rows */
+        .payment-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            align-items: center;
+        }
+        .payment-row input {
+            flex: 1;
+        }
+        .btn-remove-payment {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+            width: auto;
+            font-size: 0.8rem;
+        }
+        .btn-add-payment {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            width: auto;
+            margin-bottom: 1rem;
         }
 
         /* Modal Window */
@@ -321,41 +353,43 @@
                                 <label>Total Package Amount ($)</label>
                                 <input type="number" id="total_package" required placeholder="5000">
                             </div>
+
+                            <!-- Multiple Payments Section -->
                             <div class="form-group">
-                                <label>Initial Pay ($)</label>
-                                <input type="number" id="initial_pay" required placeholder="1000">
+                                <label>Payment Chunks / Installments</label>
+                                <div id="payment-inputs-container">
+                                    <div class="payment-row">
+                                        <input type="number" class="payment-amount" placeholder="Amount ($)" value="">
+                                        <input type="text" class="payment-note" placeholder="Note (e.g. Initial, 2nd chunk)">
+                                        <button type="button" class="btn-remove-payment" onclick="removePaymentRow(this)"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-add-payment" onclick="addPaymentRow()"><i class="fas fa-plus"></i> Add Payment Chunk</button>
                             </div>
+
                             <div class="form-grid-2">
                                 <div class="form-group">
                                     <label>Acceptance 1</label>
-                                    <input type="text" id="acceptance_1" placeholder="University">
+                                    <input type="text" id="acceptance_1" placeholder="University or Pending">
                                 </div>
                                 <div class="form-group">
                                     <label>Acceptance 2</label>
-                                    <input type="text" id="acceptance_2" placeholder="University">
+                                    <input type="text" id="acceptance_2" placeholder="University or Pending">
                                 </div>
                             </div>
                             <div class="form-grid-2">
                                 <div class="form-group">
                                     <label>Bank Statement</label>
-                                    <input type="text" id="bank_statement" placeholder="Bank statement status">
+                                    <input type="text" id="bank_statement" placeholder="Status or Pending">
                                 </div>
                                 <div class="form-group">
                                     <label>I-20</label>
-                                    <input type="text" id="i_20" placeholder="I-20 status">
+                                    <input type="text" id="i_20" placeholder="Status or Pending">
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label>2nd Initial Pay ($)</label>
-                                <input type="number" id="second_initial_pay" value="0" placeholder="0">
-                            </div>
-                            <div class="form-group">
                                 <label>Appointment</label>
-                                <input type="text" id="appointment" placeholder="Appointment Date">
-                            </div>
-                            <div class="form-group">
-                                <label>3rd Instalment ($)</label>
-                                <input type="number" id="third_instalment" value="0" placeholder="0">
+                                <input type="text" id="appointment" placeholder="Date or Pending">
                             </div>
                             <div class="form-group">
                                 <label>SEVIS</label>
@@ -388,22 +422,21 @@
                                         <th>Student / Program</th>
                                         <th>Referred By</th>
                                         <th>Total Pkg</th>
-                                        <th>Initial Pay</th>
-                                        <th>Pending</th>
+                                        <th>Total Paid</th>
+                                        <th>Pending Balance</th>
+                                        <th>Payment Breakdown</th>
                                         <th>Acc 1</th>
                                         <th>Acc 2</th>
                                         <th>Bank St.</th>
                                         <th>I-20</th>
-                                        <th>2nd Init Pay</th>
                                         <th>Appt.</th>
-                                        <th>3rd Inst.</th>
                                         <th>SEVIS Remarks</th>
                                         <th>General Remarks</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="student-table-body">
-                                    <tr><td colspan="17" class="loading-spinner">Connecting to cloud storage...</td></tr>
+                                    <tr><td colspan="16" class="loading-spinner">Connecting to cloud storage...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -445,48 +478,38 @@
                 </div>
             </div>
 
+            <!-- Edit Modal Multiple Payments -->
+            <div class="form-group">
+                <label>Payment Chunks / Installments</label>
+                <div id="edit-payment-inputs-container"></div>
+                <button type="button" class="btn-add-payment" onclick="addEditPaymentRow()"><i class="fas fa-plus"></i> Add Payment Chunk</button>
+            </div>
+
             <div class="form-grid-2">
-                <div class="form-group">
-                    <label>Initial Pay ($)</label>
-                    <input type="number" id="edit-initial_pay">
-                </div>
                 <div class="form-group">
                     <label>Acceptance 1</label>
                     <input type="text" id="edit-acceptance_1">
                 </div>
-            </div>
-
-            <div class="form-grid-2">
                 <div class="form-group">
                     <label>Acceptance 2</label>
                     <input type="text" id="edit-acceptance_2">
                 </div>
+            </div>
+
+            <div class="form-grid-2">
                 <div class="form-group">
                     <label>Bank Statement</label>
                     <input type="text" id="edit-bank_statement">
                 </div>
-            </div>
-
-            <div class="form-grid-2">
                 <div class="form-group">
                     <label>I-20</label>
                     <input type="text" id="edit-i_20">
                 </div>
-                <div class="form-group">
-                    <label>2nd Initial Pay ($)</label>
-                    <input type="number" id="edit-second_initial_pay">
-                </div>
             </div>
 
-            <div class="form-grid-2">
-                <div class="form-group">
-                    <label>Appointment</label>
-                    <input type="text" id="edit-appointment">
-                </div>
-                <div class="form-group">
-                    <label>3rd Instalment ($)</label>
-                    <input type="number" id="edit-third_instalment">
-                </div>
+            <div class="form-group">
+                <label>Appointment</label>
+                <input type="text" id="edit-appointment">
             </div>
 
             <div class="form-group">
@@ -551,7 +574,7 @@
                 renderTable();
             } catch (err) {
                 console.error("Error fetching from cloud:", err);
-                document.getElementById("student-table-body").innerHTML = `<tr><td colspan="17" style="text-align: center; color: var(--danger);">Failed to load cloud data.</td></tr>`;
+                document.getElementById("student-table-body").innerHTML = `<tr><td colspan="16" style="text-align: center; color: var(--danger);">Failed to load cloud data.</td></tr>`;
             }
         }
 
@@ -572,8 +595,65 @@
             }
         }
 
+        // Dynamic Payment Chunks Handler for Add Form
+        function addPaymentRow(amount = '', note = '') {
+            const container = document.getElementById("payment-inputs-container");
+            const div = document.createElement("div");
+            div.className = "payment-row";
+            div.innerHTML = `
+                <input type="number" class="payment-amount" placeholder="Amount ($)" value="${amount}">
+                <input type="text" class="payment-note" placeholder="Note (e.g. Initial, 2nd chunk)" value="${note}">
+                <button type="button" class="btn-remove-payment" onclick="removePaymentRow(this)"><i class="fas fa-trash"></i></button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removePaymentRow(btn) {
+            const row = btn.closest('.payment-row');
+            if(document.querySelectorAll('#payment-inputs-container .payment-row').length > 1) {
+                row.remove();
+            } else {
+                row.querySelector('.payment-amount').value = '';
+                row.querySelector('.payment-note').value = '';
+            }
+        }
+
+        // Dynamic Payment Chunks Handler for Edit Modal
+        function addEditPaymentRow(amount = '', note = '') {
+            const container = document.getElementById("edit-payment-inputs-container");
+            const div = document.createElement("div");
+            div.className = "payment-row";
+            div.innerHTML = `
+                <input type="number" class="edit-payment-amount" placeholder="Amount ($)" value="${amount}">
+                <input type="text" class="edit-payment-note" placeholder="Note (e.g. Initial, 2nd chunk)" value="${note}">
+                <button type="button" class="btn-remove-payment" onclick="this.closest('.payment-row').remove()"><i class="fas fa-trash"></i></button>
+            `;
+            container.appendChild(div);
+        }
+
+        // Helper function to check and highlight "pending" in red
+        function formatCell(val) {
+            if (!val) return '-';
+            const strVal = String(val);
+            if (strVal.toLowerCase().includes('pending')) {
+                return `<span style="color: var(--danger); font-weight: 700; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">${strVal}</span>`;
+            }
+            return strVal;
+        }
+
         async function addStudent(e) {
             e.preventDefault();
+            
+            // Gather payment chunks
+            const payments = [];
+            document.querySelectorAll('#payment-inputs-container .payment-row').forEach(row => {
+                const amt = parseFloat(row.querySelector('.payment-amount').value);
+                const note = row.querySelector('.payment-note').value.trim();
+                if(!isNaN(amt) && amt > 0) {
+                    payments.push({ amount: amt, note: note || 'Payment' });
+                }
+            });
+
             const newStudent = {
                 id: Date.now(),
                 name: document.getElementById("name").value,
@@ -581,14 +661,12 @@
                 program: document.getElementById("program").value || "",
                 preferred_by: document.getElementById("preferred_by").value || "",
                 total_package: parseFloat(document.getElementById("total_package").value) || 0,
-                initial_pay: parseFloat(document.getElementById("initial_pay").value) || 0,
+                payments: payments,
                 acceptance_1: document.getElementById("acceptance_1").value || "",
                 acceptance_2: document.getElementById("acceptance_2").value || "",
                 bank_statement: document.getElementById("bank_statement").value || "",
                 i_20: document.getElementById("i_20").value || "",
-                second_initial_pay: parseFloat(document.getElementById("second_initial_pay").value) || 0,
                 appointment: document.getElementById("appointment").value || "",
-                third_instalment: parseFloat(document.getElementById("third_instalment").value) || 0,
                 sevis_remarks: document.getElementById("sevis_remarks").value || "",
                 remarks: document.getElementById("remarks").value || ""
             };
@@ -596,6 +674,8 @@
             const updated = [...studentsCache, newStudent];
             await saveStudentsToCloud(updated);
             document.getElementById("student-form").reset();
+            document.getElementById("payment-inputs-container").innerHTML = '';
+            addPaymentRow(); // reset with one empty row
         }
 
         async function deleteStudent(id) {
@@ -620,13 +700,26 @@
             });
 
             if(filteredStudents.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="17" style="text-align: center; color: #64748b;">No student records found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="16" style="text-align: center; color: #64748b;">No student records found.</td></tr>`;
                 return;
             }
 
             filteredStudents.forEach((s, index) => {
-                const totalPaid = (parseFloat(s.initial_pay) || 0) + (parseFloat(s.second_initial_pay) || 0) + (parseFloat(s.third_instalment) || 0);
+                // Backward compatibility if older records used old schema fields
+                let payList = s.payments || [];
+                if(payList.length === 0 && (s.initial_pay || s.second_initial_pay || s.third_instalment)) {
+                    if(s.initial_pay) payList.push({ amount: s.initial_pay, note: "Initial Pay" });
+                    if(s.second_initial_pay) payList.push({ amount: s.second_initial_pay, note: "2nd Init Pay" });
+                    if(s.third_instalment) payList.push({ amount: s.third_instalment, note: "3rd Inst." });
+                }
+
+                const totalPaid = payList.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
                 const pending = (parseFloat(s.total_package) || 0) - totalPaid;
+
+                // Format payment summary string
+                const paymentSummary = payList.length > 0 
+                    ? payList.map(p => `$${p.amount} (${p.note})`).join('<br>') 
+                    : '<span style="color:var(--text-muted)">No payments</span>';
 
                 const row = document.createElement("tr");
                 row.innerHTML = `
@@ -635,17 +728,16 @@
                     <td><strong>${s.name}</strong><br><small style="color: #64748b;">${s.program}</small></td>
                     <td><small>${s.preferred_by || 'None'}</small></td>
                     <td>$${s.total_package}</td>
-                    <td>$${s.initial_pay}</td>
+                    <td><strong style="color: var(--success)">$${totalPaid}</strong></td>
                     <td><strong style="color: ${pending > 0 ? 'var(--danger)' : 'var(--success)'}">$${pending >= 0 ? pending : 0}</strong></td>
-                    <td><small>${s.acceptance_1 || '-'}</small></td>
-                    <td><small>${s.acceptance_2 || '-'}</small></td>
-                    <td><small>${s.bank_statement || '-'}</small></td>
-                    <td><small>${s.i_20 || '-'}</small></td>
-                    <td>$${s.second_initial_pay}</td>
-                    <td><small>${s.appointment || '-'}</small></td>
-                    <td>$${s.third_instalment}</td>
-                    <td><small>${s.sevis_remarks || '-'}</small></td>
-                    <td><small>${s.remarks || '-'}</small></td>
+                    <td><small>${paymentSummary}</small></td>
+                    <td><small>${formatCell(s.acceptance_1)}</small></td>
+                    <td><small>${formatCell(s.acceptance_2)}</small></td>
+                    <td><small>${formatCell(s.bank_statement)}</small></td>
+                    <td><small>${formatCell(s.i_20)}</small></td>
+                    <td><small>${formatCell(s.appointment)}</small></td>
+                    <td><small>${formatCell(s.sevis_remarks)}</small></td>
+                    <td><small>${formatCell(s.remarks)}</small></td>
                     <td>
                         <div class="btn-action-group">
                             <button class="btn-edit" onclick="openModal(${s.id})"><i class="fas fa-edit"></i> Edit</button>
@@ -667,16 +759,30 @@
             document.getElementById("edit-program").value = student.program || "";
             document.getElementById("edit-preferred_by").value = student.preferred_by || "";
             document.getElementById("edit-total_package").value = student.total_package || 0;
-            document.getElementById("edit-initial_pay").value = student.initial_pay || 0;
             document.getElementById("edit-acceptance_1").value = student.acceptance_1 || "";
             document.getElementById("edit-acceptance_2").value = student.acceptance_2 || "";
             document.getElementById("edit-bank_statement").value = student.bank_statement || "";
             document.getElementById("edit-i_20").value = student.i_20 || "";
-            document.getElementById("edit-second_initial_pay").value = student.second_initial_pay || 0;
             document.getElementById("edit-appointment").value = student.appointment || "";
-            document.getElementById("edit-third_instalment").value = student.third_instalment || 0;
             document.getElementById("edit-sevis_remarks").value = student.sevis_remarks || "";
             document.getElementById("edit-remarks").value = student.remarks || "";
+
+            // Populate Edit payments
+            const editContainer = document.getElementById("edit-payment-inputs-container");
+            editContainer.innerHTML = '';
+            
+            let payList = student.payments || [];
+            if(payList.length === 0 && (student.initial_pay || student.second_initial_pay || student.third_instalment)) {
+                if(student.initial_pay) payList.push({ amount: student.initial_pay, note: "Initial Pay" });
+                if(student.second_initial_pay) payList.push({ amount: student.second_initial_pay, note: "2nd Init Pay" });
+                if(student.third_instalment) payList.push({ amount: student.third_instalment, note: "3rd Inst." });
+            }
+
+            if(payList.length > 0) {
+                payList.forEach(p => addEditPaymentRow(p.amount, p.note));
+            } else {
+                addEditPaymentRow();
+            }
 
             document.getElementById("edit-modal").style.display = "flex";
         }
@@ -689,6 +795,16 @@
         async function saveStudentEdits() {
             const studentId = parseInt(document.getElementById("edit-student-id").value);
 
+            // Gather edit payment chunks
+            const payments = [];
+            document.querySelectorAll('#edit-payment-inputs-container .payment-row').forEach(row => {
+                const amt = parseFloat(row.querySelector('.edit-payment-amount').value);
+                const note = row.querySelector('.edit-payment-note').value.trim();
+                if(!isNaN(amt) && amt > 0) {
+                    payments.push({ amount: amt, note: note || 'Payment' });
+                }
+            });
+
             const updated = studentsCache.map(s => {
                 if(s.id === studentId) {
                     return {
@@ -697,14 +813,12 @@
                         program: document.getElementById("edit-program").value,
                         preferred_by: document.getElementById("edit-preferred_by").value,
                         total_package: parseFloat(document.getElementById("edit-total_package").value) || 0,
-                        initial_pay: parseFloat(document.getElementById("edit-initial_pay").value) || 0,
+                        payments: payments,
                         acceptance_1: document.getElementById("edit-acceptance_1").value,
                         acceptance_2: document.getElementById("edit-acceptance_2").value,
                         bank_statement: document.getElementById("edit-bank_statement").value,
                         i_20: document.getElementById("edit-i_20").value,
-                        second_initial_pay: parseFloat(document.getElementById("edit-second_initial_pay").value) || 0,
                         appointment: document.getElementById("edit-appointment").value,
-                        third_instalment: parseFloat(document.getElementById("edit-third_instalment").value) || 0,
                         sevis_remarks: document.getElementById("edit-sevis_remarks").value,
                         remarks: document.getElementById("edit-remarks").value
                     };
