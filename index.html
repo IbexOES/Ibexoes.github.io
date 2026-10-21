@@ -334,6 +334,10 @@
                         <h3>Add New Student</h3>
                         <form id="student-form" onsubmit="addStudent(event)">
                             <div class="form-group">
+                                <label>Serial Number (SR#)</label>
+                                <input type="number" id="sr_no" required placeholder="e.g. 1, 2, 3...">
+                            </div>
+                            <div class="form-group">
                                 <label>Passport Number</label>
                                 <input type="text" id="passport" placeholder="AB1234567">
                             </div>
@@ -410,14 +414,14 @@
                         <div class="table-header-flex">
                             <h3>Registered Students & Status</h3>
                             <div class="search-box">
-                                <input type="text" id="search-input" onkeyup="renderTable()" placeholder="🔍 Search name, passport..." style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px;">
+                                <input type="text" id="search-input" onkeyup="renderTable()" placeholder="🔍 Search name, passport, SR#..." style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px;">
                             </div>
                         </div>
                         <div class="table-responsive">
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>#</th>
+                                        <th>SR#</th>
                                         <th>Passport</th>
                                         <th>Student / Program</th>
                                         <th>Referred By</th>
@@ -458,24 +462,29 @@
             
             <div class="form-grid-2">
                 <div class="form-group">
-                    <label>Passport Number</label>
-                    <input type="text" id="edit-passport">
+                    <label>Serial Number (SR#)</label>
+                    <input type="number" id="edit-sr_no">
                 </div>
                 <div class="form-group">
-                    <label>Program</label>
-                    <input type="text" id="edit-program">
+                    <label>Passport Number</label>
+                    <input type="text" id="edit-passport">
                 </div>
             </div>
 
             <div class="form-grid-2">
                 <div class="form-group">
+                    <label>Program</label>
+                    <input type="text" id="edit-program">
+                </div>
+                <div class="form-group">
                     <label>Preferred By</label>
                     <input type="text" id="edit-preferred_by">
                 </div>
-                <div class="form-group">
-                    <label>Total Package Amount ($)</label>
-                    <input type="number" id="edit-total_package">
-                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Total Package Amount ($)</label>
+                <input type="number" id="edit-total_package">
             </div>
 
             <!-- Edit Modal Multiple Payments -->
@@ -656,6 +665,7 @@
 
             const newStudent = {
                 id: Date.now(),
+                sr_no: parseInt(document.getElementById("sr_no").value) || 0,
                 name: document.getElementById("name").value,
                 passport: document.getElementById("passport").value || "N/A",
                 program: document.getElementById("program").value || "",
@@ -691,12 +701,21 @@
             const searchQuery = searchInput ? searchInput.value.toLowerCase() : "";
             tbody.innerHTML = "";
 
-            const filteredStudents = studentsCache.filter(s => {
+            // Sort students in ascending order based on custom manual serial number (sr_no)
+            const sortedStudents = [...studentsCache].sort((a, b) => {
+                const srA = parseInt(a.sr_no) || 0;
+                const srB = parseInt(b.sr_no) || 0;
+                return srA - srB;
+            });
+
+            // Filter students based on search query (Name, Passport, Program, SR#, etc.)
+            const filteredStudents = sortedStudents.filter(s => {
+                const srNo = String(s.sr_no || "").toLowerCase();
                 const name = (s.name || "").toLowerCase();
                 const passport = (s.passport || "").toLowerCase();
                 const program = (s.program || "").toLowerCase();
                 const preferred = (s.preferred_by || "").toLowerCase();
-                return name.includes(searchQuery) || passport.includes(searchQuery) || program.includes(searchQuery) || preferred.includes(searchQuery);
+                return srNo.includes(searchQuery) || name.includes(searchQuery) || passport.includes(searchQuery) || program.includes(searchQuery) || preferred.includes(searchQuery);
             });
 
             if(filteredStudents.length === 0) {
@@ -704,7 +723,7 @@
                 return;
             }
 
-            filteredStudents.forEach((s, index) => {
+            filteredStudents.forEach(s => {
                 // Backward compatibility if older records used old schema fields
                 let payList = s.payments || [];
                 if(payList.length === 0 && (s.initial_pay || s.second_initial_pay || s.third_instalment)) {
@@ -723,7 +742,7 @@
 
                 const row = document.createElement("tr");
                 row.innerHTML = `
-                    <td><strong>${index + 1}</strong></td>
+                    <td><strong>${s.sr_no !== undefined ? s.sr_no : '-'}</strong></td>
                     <td><code>${s.passport || 'N/A'}</code></td>
                     <td><strong>${s.name}</strong><br><small style="color: #64748b;">${s.program}</small></td>
                     <td><small>${s.preferred_by || 'None'}</small></td>
@@ -755,6 +774,7 @@
 
             document.getElementById("edit-student-id").value = student.id;
             document.getElementById("modal-student-name").innerText = `Edit: ${student.name}`;
+            document.getElementById("edit-sr_no").value = student.sr_no || "";
             document.getElementById("edit-passport").value = student.passport || "";
             document.getElementById("edit-program").value = student.program || "";
             document.getElementById("edit-preferred_by").value = student.preferred_by || "";
@@ -809,6 +829,7 @@
                 if(s.id === studentId) {
                     return {
                         ...s,
+                        sr_no: parseInt(document.getElementById("edit-sr_no").value) || 0,
                         passport: document.getElementById("edit-passport").value,
                         program: document.getElementById("edit-program").value,
                         preferred_by: document.getElementById("edit-preferred_by").value,
