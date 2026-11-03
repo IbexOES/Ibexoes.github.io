@@ -454,7 +454,7 @@
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modal-student-name">Edit Student Details</h3>
+                <h3 id="modal-student-title">Edit Student Details</h3>
                 <button class="close-modal" onclick="closeModal()">&times;</button>
             </div>
 
@@ -469,6 +469,11 @@
                     <label>Passport Number</label>
                     <input type="text" id="edit-passport">
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label>Student Name</label>
+                <input type="text" id="edit-name" required placeholder="Full Name">
             </div>
 
             <div class="form-grid-2">
@@ -779,9 +784,9 @@
             if(!student) return;
 
             document.getElementById("edit-student-id").value = student.id;
-            document.getElementById("modal-student-name").innerText = `Edit: ${student.name}`;
             document.getElementById("edit-sr_no").value = student.sr_no || "";
             document.getElementById("edit-passport").value = student.passport || "";
+            document.getElementById("edit-name").value = student.name || "";
             document.getElementById("edit-program").value = student.program || "";
             document.getElementById("edit-preferred_by").value = student.preferred_by || "";
             document.getElementById("edit-total_package").value = student.total_package || 0;
@@ -837,6 +842,7 @@
                         ...s,
                         sr_no: parseInt(document.getElementById("edit-sr_no").value) || 0,
                         passport: document.getElementById("edit-passport").value,
+                        name: document.getElementById("edit-name").value,
                         program: document.getElementById("edit-program").value,
                         preferred_by: document.getElementById("edit-preferred_by").value,
                         total_package: parseFloat(document.getElementById("edit-total_package").value) || 0,
