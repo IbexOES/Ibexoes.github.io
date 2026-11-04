@@ -76,6 +76,7 @@
             font-size: 0.9rem;
             outline: none;
             transition: border-color 0.2s;
+            background: #fff;
         }
 
         input:focus, select:focus, textarea:focus {
@@ -121,11 +122,37 @@
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
             margin-bottom: 2rem;
             border: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         header h1 {
             font-size: 1.5rem;
             color: var(--primary);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .currency-switcher {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .currency-switcher select {
+            border: none;
+            background: transparent;
+            font-weight: 600;
+            color: var(--primary);
+            cursor: pointer;
         }
 
         .logout-btn {
@@ -220,14 +247,17 @@
             width: auto;
         }
 
-        /* Dynamic Payment Rows */
+        /* Dynamic Payment Rows with Currency */
         .payment-row {
             display: flex;
-            gap: 0.5rem;
+            gap: 0.4rem;
             margin-bottom: 0.5rem;
             align-items: center;
         }
         .payment-row input {
+            flex: 1.5;
+        }
+        .payment-row select {
             flex: 1;
         }
         .btn-remove-payment {
@@ -250,6 +280,17 @@
             font-size: 0.8rem;
             width: auto;
             margin-bottom: 1rem;
+        }
+
+        .package-currency-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .package-currency-group input {
+            flex: 2;
+        }
+        .package-currency-group select {
+            flex: 1;
         }
 
         /* Modal Window */
@@ -324,7 +365,18 @@
         <div id="dashboard-screen">
             <header>
                 <h1><i class="fas fa-globe"></i> IBEX OES Student Status & Management Portal</h1>
-                <button class="logout-btn" onclick="handleLogout()">Logout</button>
+                <div class="header-controls">
+                    <div class="currency-switcher">
+                        <label for="global-currency" style="margin-bottom:0; font-size:0.75rem;"><i class="fas fa-coins"></i> View In:</label>
+                        <select id="global-currency" onchange="renderTable()">
+                            <option value="USD">USD ($)</option>
+                            <option value="PKR">PKR (₨)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="GBP">GBP (£)</option>
+                        </select>
+                    </div>
+                    <button class="logout-btn" onclick="handleLogout()">Logout</button>
+                </div>
             </header>
 
             <div class="dashboard-grid">
@@ -354,17 +406,31 @@
                                 <input type="text" id="preferred_by" placeholder="Agent / Ref">
                             </div>
                             <div class="form-group">
-                                <label>Total Package Amount ($)</label>
-                                <input type="number" id="total_package" required placeholder="5000">
+                                <label>Total Package Amount</label>
+                                <div class="package-currency-group">
+                                    <input type="number" id="total_package" required placeholder="5000" step="any">
+                                    <select id="package_currency">
+                                        <option value="USD" selected>USD ($)</option>
+                                        <option value="PKR">PKR (₨)</option>
+                                        <option value="EUR">EUR (€)</option>
+                                        <option value="GBP">GBP (£)</option>
+                                    </select>
+                                </div>
                             </div>
 
-                            <!-- Multiple Payments Section -->
+                            <!-- Multiple Payments Section with Currency -->
                             <div class="form-group">
                                 <label>Payment Chunks / Installments</label>
                                 <div id="payment-inputs-container">
                                     <div class="payment-row">
-                                        <input type="number" class="payment-amount" placeholder="Amount ($)" value="">
-                                        <input type="text" class="payment-note" placeholder="Note (e.g. Initial, 2nd chunk)">
+                                        <input type="number" class="payment-amount" placeholder="Amount" step="any">
+                                        <select class="payment-currency">
+                                            <option value="USD" selected>USD ($)</option>
+                                            <option value="PKR">PKR (₨)</option>
+                                            <option value="EUR">EUR (€)</option>
+                                            <option value="GBP">GBP (£)</option>
+                                        </select>
+                                        <input type="text" class="payment-note" placeholder="Note">
                                         <button type="button" class="btn-remove-payment" onclick="removePaymentRow(this)"><i class="fas fa-trash"></i></button>
                                     </div>
                                 </div>
@@ -488,8 +554,16 @@
             </div>
 
             <div class="form-group">
-                <label>Total Package Amount ($)</label>
-                <input type="number" id="edit-total_package">
+                <label>Total Package Amount</label>
+                <div class="package-currency-group">
+                    <input type="number" id="edit-total_package" step="any">
+                    <select id="edit-package_currency">
+                        <option value="USD">USD ($)</option>
+                        <option value="PKR">PKR (₨)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Edit Modal Multiple Payments -->
@@ -546,6 +620,28 @@
 
         const CORRECT_CODE = "51214";
         let studentsCache = [];
+
+        // Exchange rates relative to USD base
+        const exchangeRates = {
+            USD: 1.0,
+            PKR: 278.5,  // Approx conversion rate (editable if needed)
+            EUR: 0.92,
+            GBP: 0.79
+        };
+
+        const currencySymbols = {
+            USD: "$",
+            PKR: "₨",
+            EUR: "€",
+            GBP: "£"
+        };
+
+        // Convert any amount from one currency to another
+        function convertCurrency(amount, fromCurr, toCurr) {
+            if (!amount || isNaN(amount)) return 0;
+            const inUSD = amount / (exchangeRates[fromCurr] || 1.0);
+            return inUSD * (exchangeRates[toCurr] || 1.0);
+        }
 
         window.onload = function() {
             if(sessionStorage.getItem("isLoggedIn") === "true") {
@@ -610,13 +706,19 @@
         }
 
         // Dynamic Payment Chunks Handler for Add Form
-        function addPaymentRow(amount = '', note = '') {
+        function addPaymentRow(amount = '', currency = 'USD', note = '') {
             const container = document.getElementById("payment-inputs-container");
             const div = document.createElement("div");
             div.className = "payment-row";
             div.innerHTML = `
-                <input type="number" class="payment-amount" placeholder="Amount ($)" value="${amount}">
-                <input type="text" class="payment-note" placeholder="Note (e.g. Initial, 2nd chunk)" value="${note}">
+                <input type="number" class="payment-amount" placeholder="Amount" value="${amount}" step="any">
+                <select class="payment-currency">
+                    <option value="USD" ${currency === 'USD' ? 'selected' : ''}>USD ($)</option>
+                    <option value="PKR" ${currency === 'PKR' ? 'selected' : ''}>PKR (₨)</option>
+                    <option value="EUR" ${currency === 'EUR' ? 'selected' : ''}>EUR (€)</option>
+                    <option value="GBP" ${currency === 'GBP' ? 'selected' : ''}>GBP (£)</option>
+                </select>
+                <input type="text" class="payment-note" placeholder="Note" value="${note}">
                 <button type="button" class="btn-remove-payment" onclick="removePaymentRow(this)"><i class="fas fa-trash"></i></button>
             `;
             container.appendChild(div);
@@ -633,13 +735,19 @@
         }
 
         // Dynamic Payment Chunks Handler for Edit Modal
-        function addEditPaymentRow(amount = '', note = '') {
+        function addEditPaymentRow(amount = '', currency = 'USD', note = '') {
             const container = document.getElementById("edit-payment-inputs-container");
             const div = document.createElement("div");
             div.className = "payment-row";
             div.innerHTML = `
-                <input type="number" class="edit-payment-amount" placeholder="Amount ($)" value="${amount}">
-                <input type="text" class="edit-payment-note" placeholder="Note (e.g. Initial, 2nd chunk)" value="${note}">
+                <input type="number" class="edit-payment-amount" placeholder="Amount" value="${amount}" step="any">
+                <select class="edit-payment-currency">
+                    <option value="USD" ${currency === 'USD' ? 'selected' : ''}>USD ($)</option>
+                    <option value="PKR" ${currency === 'PKR' ? 'selected' : ''}>PKR (₨)</option>
+                    <option value="EUR" ${currency === 'EUR' ? 'selected' : ''}>EUR (€)</option>
+                    <option value="GBP" ${currency === 'GBP' ? 'selected' : ''}>GBP (£)</option>
+                </select>
+                <input type="text" class="edit-payment-note" placeholder="Note" value="${note}">
                 <button type="button" class="btn-remove-payment" onclick="this.closest('.payment-row').remove()"><i class="fas fa-trash"></i></button>
             `;
             container.appendChild(div);
@@ -658,13 +766,14 @@
         async function addStudent(e) {
             e.preventDefault();
             
-            // Gather payment chunks
+            // Gather payment chunks with currencies
             const payments = [];
             document.querySelectorAll('#payment-inputs-container .payment-row').forEach(row => {
                 const amt = parseFloat(row.querySelector('.payment-amount').value);
+                const curr = row.querySelector('.payment-currency').value;
                 const note = row.querySelector('.payment-note').value.trim();
                 if(!isNaN(amt) && amt > 0) {
-                    payments.push({ amount: amt, note: note || 'Payment' });
+                    payments.push({ amount: amt, currency: curr, note: note || 'Payment' });
                 }
             });
 
@@ -676,6 +785,7 @@
                 program: document.getElementById("program").value || "",
                 preferred_by: document.getElementById("preferred_by").value || "",
                 total_package: parseFloat(document.getElementById("total_package").value) || 0,
+                package_currency: document.getElementById("package_currency").value,
                 payments: payments,
                 acceptance_1: document.getElementById("acceptance_1").value || "",
                 acceptance_2: document.getElementById("acceptance_2").value || "",
@@ -689,6 +799,7 @@
             const updated = [...studentsCache, newStudent];
             await saveStudentsToCloud(updated);
             document.getElementById("student-form").reset();
+            document.getElementById("package_currency").value = "USD";
             document.getElementById("payment-inputs-container").innerHTML = '';
             addPaymentRow(); // reset with one empty row
         }
@@ -709,6 +820,7 @@
         function renderTable() {
             const tbody = document.getElementById("student-table-body");
             const searchInput = document.getElementById("search-input");
+            const globalCurrency = document.getElementById("global-currency").value;
             const searchQuery = searchInput ? searchInput.value.toLowerCase() : "";
             tbody.innerHTML = "";
 
@@ -719,7 +831,7 @@
                 return srA - srB;
             });
 
-            // Filter students based on search query (Name, Passport, Program, SR#, etc.)
+            // Filter students based on search query
             const filteredStudents = sortedStudents.filter(s => {
                 const srNo = String(s.sr_no || "").toLowerCase();
                 const name = (s.name || "").toLowerCase();
@@ -734,22 +846,32 @@
                 return;
             }
 
+            const targetSym = currencySymbols[globalCurrency] || "$";
+
             filteredStudents.forEach(s => {
-                // Backward compatibility if older records used old schema fields
+                // Backward compatibility for older records
                 let payList = s.payments || [];
                 if(payList.length === 0 && (s.initial_pay || s.second_initial_pay || s.third_instalment)) {
-                    if(s.initial_pay) payList.push({ amount: s.initial_pay, note: "Initial Pay" });
-                    if(s.second_initial_pay) payList.push({ amount: s.second_initial_pay, note: "2nd Init Pay" });
-                    if(s.third_instalment) payList.push({ amount: s.third_instalment, note: "3rd Inst." });
+                    if(s.initial_pay) payList.push({ amount: s.initial_pay, currency: 'USD', note: "Initial Pay" });
+                    if(s.second_initial_pay) payList.push({ amount: s.second_initial_pay, currency: 'USD', note: "2nd Init Pay" });
+                    if(s.third_instalment) payList.push({ amount: s.third_instalment, currency: 'USD', note: "3rd Inst." });
                 }
 
-                const totalPaid = payList.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-                const pending = (parseFloat(s.total_package) || 0) - totalPaid;
+                const pkgCurr = s.package_currency || 'USD';
+                const totalPkgConverted = convertCurrency(parseFloat(s.total_package) || 0, pkgCurr, globalCurrency);
 
-                // Format payment summary string
-                const paymentSummary = payList.length > 0 
-                    ? payList.map(p => `$${p.amount} (${p.note})`).join('<br>') 
+                // Calculate total paid converted to global view currency
+                let totalPaidConverted = 0;
+                const paymentSummaryHtml = payList.length > 0 
+                    ? payList.map(p => {
+                        const pCurr = p.currency || 'USD';
+                        const convertedAmt = convertCurrency(parseFloat(p.amount) || 0, pCurr, globalCurrency);
+                        totalPaidConverted += convertedAmt;
+                        return `${targetSym}${convertedAmt.toFixed(2)} <small>(${p.amount} ${pCurr} - ${p.note})</small>`;
+                    }).join('<br>') 
                     : '<span style="color:var(--text-muted)">No payments</span>';
+
+                const pendingConverted = totalPkgConverted - totalPaidConverted;
 
                 const row = document.createElement("tr");
                 row.innerHTML = `
@@ -757,10 +879,10 @@
                     <td><code>${s.passport || 'N/A'}</code></td>
                     <td><strong>${s.name}</strong><br><small style="color: #64748b;">${s.program}</small></td>
                     <td><small>${s.preferred_by || 'None'}</small></td>
-                    <td>$${s.total_package}</td>
-                    <td><strong style="color: var(--success)">$${totalPaid}</strong></td>
-                    <td><strong style="color: ${pending > 0 ? 'var(--danger)' : 'var(--success)'}">$${pending >= 0 ? pending : 0}</strong></td>
-                    <td><small>${paymentSummary}</small></td>
+                    <td>${targetSym}${totalPkgConverted.toFixed(2)}</td>
+                    <td><strong style="color: var(--success)">${targetSym}${totalPaidConverted.toFixed(2)}</strong></td>
+                    <td><strong style="color: ${pendingConverted > 0 ? 'var(--danger)' : 'var(--success)'}">${targetSym}${pendingConverted >= 0 ? pendingConverted.toFixed(2) : '0.00'}</strong></td>
+                    <td><small>${paymentSummaryHtml}</small></td>
                     <td><small>${formatCell(s.acceptance_1)}</small></td>
                     <td><small>${formatCell(s.acceptance_2)}</small></td>
                     <td><small>${formatCell(s.bank_statement)}</small></td>
@@ -790,6 +912,7 @@
             document.getElementById("edit-program").value = student.program || "";
             document.getElementById("edit-preferred_by").value = student.preferred_by || "";
             document.getElementById("edit-total_package").value = student.total_package || 0;
+            document.getElementById("edit-package_currency").value = student.package_currency || "USD";
             document.getElementById("edit-acceptance_1").value = student.acceptance_1 || "";
             document.getElementById("edit-acceptance_2").value = student.acceptance_2 || "";
             document.getElementById("edit-bank_statement").value = student.bank_statement || "";
@@ -804,13 +927,13 @@
             
             let payList = student.payments || [];
             if(payList.length === 0 && (student.initial_pay || student.second_initial_pay || student.third_instalment)) {
-                if(student.initial_pay) payList.push({ amount: student.initial_pay, note: "Initial Pay" });
-                if(student.second_initial_pay) payList.push({ amount: student.second_initial_pay, note: "2nd Init Pay" });
-                if(student.third_instalment) payList.push({ amount: student.third_instalment, note: "3rd Inst." });
+                if(student.initial_pay) payList.push({ amount: student.initial_pay, currency: 'USD', note: "Initial Pay" });
+                if(student.second_initial_pay) payList.push({ amount: student.second_initial_pay, currency: 'USD', note: "2nd Init Pay" });
+                if(student.third_instalment) payList.push({ amount: student.third_instalment, currency: 'USD', note: "3rd Inst." });
             }
 
             if(payList.length > 0) {
-                payList.forEach(p => addEditPaymentRow(p.amount, p.note));
+                payList.forEach(p => addEditPaymentRow(p.amount, p.currency || 'USD', p.note));
             } else {
                 addEditPaymentRow();
             }
@@ -826,13 +949,14 @@
         async function saveStudentEdits() {
             const studentId = parseInt(document.getElementById("edit-student-id").value);
 
-            // Gather edit payment chunks
+            // Gather edit payment chunks with currencies
             const payments = [];
             document.querySelectorAll('#edit-payment-inputs-container .payment-row').forEach(row => {
                 const amt = parseFloat(row.querySelector('.edit-payment-amount').value);
+                const curr = row.querySelector('.edit-payment-currency').value;
                 const note = row.querySelector('.edit-payment-note').value.trim();
                 if(!isNaN(amt) && amt > 0) {
-                    payments.push({ amount: amt, note: note || 'Payment' });
+                    payments.push({ amount: amt, currency: curr, note: note || 'Payment' });
                 }
             });
 
@@ -846,6 +970,7 @@
                         program: document.getElementById("edit-program").value,
                         preferred_by: document.getElementById("edit-preferred_by").value,
                         total_package: parseFloat(document.getElementById("edit-total_package").value) || 0,
+                        package_currency: document.getElementById("edit-package_currency").value,
                         payments: payments,
                         acceptance_1: document.getElementById("edit-acceptance_1").value,
                         acceptance_2: document.getElementById("edit-acceptance_2").value,
